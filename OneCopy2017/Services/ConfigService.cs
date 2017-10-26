@@ -8,46 +8,58 @@ namespace OneCopy2017.Services
     public class ConfigService
     {
         private readonly ErrorHandlingService _errorHandlingService;
+        private readonly AppManagementService _appManagementService;
         private readonly ValidationService _validationService;
 
-        public ConfigService(ValidationService validationService, ErrorHandlingService errorHandlingService)
+        public ConfigService(ValidationService validationService, ErrorHandlingService errorHandlingService, AppManagementService appManagementService)
         {
             _validationService = validationService;
             _errorHandlingService = errorHandlingService;
+            _appManagementService = appManagementService;
 
             SynologyHiddenDirectoryName = @"@eaDir";
             DupesDirectoryName = @"_dupes";
+            CommandArgumentsStrategy = CommandArgumentsStrategyOption.Oldest;
         }
 
-        // public string RootDirectory { get; }
+
+
         public string[] Directories { get; set; }
 
         public bool Preview { get; set; }
         public string DupesDirectory { get; set; }
         public string SynologyHiddenDirectoryName { get; }
         public string DupesDirectoryName { get; }
-
-        public string Help =>
-            $"{Environment.NewLine}Start example:   OneCopy2017.exe --dir \"c:\\photos\" --dir \"d:\\movies\" --preview true" +
-            $"{Environment.NewLine}If multiple --dir are specified a _dupes folder will contain the duplicates for set";
+        public CommandArgumentsStrategyOption CommandArgumentsStrategy { get; set; }
 
         public void Validate()
         {
             foreach (var directory in Directories)
                 if (!_validationService.IsValidDirectory(directory))
                     _errorHandlingService.ThrowCatastrophicError(
-                        $"Invalid directory '{directory}' check start arguments or configuration. {Help}");
+                        $"Invalid directory '{directory}' check start arguments or configuration. {_appManagementService.Help}");
+
+            CommandArgumentsStrategyOption strategyOption;
+            if (Enum.TryParse(CommandArguments.Strategy, true, out strategyOption))
+                CommandArgumentsStrategy = strategyOption;
+            else
+            {
+                _errorHandlingService.ThrowCatastrophicError(
+                         $"Cannot start the program. Strategy option was defined in start up arguments but is invalid. Valid options are 'oldest' or 'newest'");
+            }
+
         }
 
         public void Load()
         {
-            Preview = UserConfiguration.Preview;
-            Directories = UserConfiguration.Directories;
-            DupesDirectory = UserConfiguration.DupesDirectory;
+            CommandArguments.Populate();
+            Preview = CommandArguments.Preview;
+            Directories = CommandArguments.Directories;
+            DupesDirectory = CommandArguments.DupesDirectory;
 
             Validate();
 
-            if (DupesDirectory == null)
+            if (string.IsNullOrWhiteSpace(DupesDirectory))
                 DupesDirectory = Path.Combine(Directories.First(), DupesDirectoryName);
         }
     }
