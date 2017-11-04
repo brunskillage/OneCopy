@@ -4,11 +4,11 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 
-namespace OneCopy.Tests
+namespace OneCopy.MsTests
 {
     public class TestSetup
     {
-        private static readonly string RootDir = AppDomain.CurrentDomain.BaseDirectory + "\\RootDir";
+        private static readonly string RootDir = "c:\\temp\\DupeTestRoot";
         private static readonly string FirstDir = RootDir + "\\FirstDir";
         private static string SecondDir = RootDir + "\\SecondDir";
         private static readonly string NestedDir = RootDir + "\\ThirdDir\\Nested";
@@ -64,11 +64,11 @@ namespace OneCopy.Tests
                 var r = new Random();
 
                 for (var x = 0; x < width; x++)
-                for (var y = 0; y < height; y++)
-                {
-                    var num = r.Next(0, 256);
-                    bmp.SetPixel(x, y, Color.FromArgb(255, num, num, num));
-                }
+                    for (var y = 0; y < height; y++)
+                    {
+                        var num = r.Next(0, 256);
+                        bmp.SetPixel(x, y, Color.FromArgb(255, num, num, num));
+                    }
                 new FileInfo(fullName).Directory.Create();
                 Console.WriteLine("Creating file at " + fullName);
                 bmp.Save(fullName, ImageFormat.Jpeg);
