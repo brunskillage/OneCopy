@@ -16,7 +16,7 @@ namespace OneCopy2017.Services
 
         public void EndProgram(string message, Exception ex = null)
         {
-            if(ex != null)
+            if (ex != null)
                 Console.WriteLine(ex.ToString());
 
             Console.WriteLine(message);

@@ -3,21 +3,41 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using OneCopy2017;
+using OneCopy2017.TinyIoc;
 
 namespace OneCopy.MsTests
 {
+
     public class TestSetup
     {
-        private static readonly string RootDir = "c:\\temp\\DupeTestRoot";
+        public static readonly string RootDir = "c:\\temp\\DupeTestRoot";
         private static readonly string FirstDir = RootDir + "\\FirstDir";
-        private static string SecondDir = RootDir + "\\SecondDir";
         private static readonly string NestedDir = RootDir + "\\ThirdDir\\Nested";
+
+        public static TinyIoCContainer RegisterServices()
+        {
+            var container = TinyIoCContainer.Current;
+
+            var typesToRegister =
+                AppDomain.CurrentDomain.GetAssemblies()
+                    .SelectMany(a => a.GetTypes())
+                    .Where(t => t.FullName.StartsWith("OneCopy2017") && t.FullName.EndsWith("Service"))
+                    .ToList();
+
+            foreach (var type in typesToRegister)
+                container.Register(type).AsSingleton();
+
+            container.Register<App>().AsSingleton();
+
+            return container;
+        }
 
         public static void ClearTestFiles()
         {
             if (Directory.Exists(RootDir))
             {
-                Directory.EnumerateFiles(RootDir).ToList().ForEach(f => File.Delete(f));
+                Directory.EnumerateFiles(RootDir).ToList().ForEach(File.Delete);
                 Directory.EnumerateDirectories(RootDir).ToList().ForEach(d => Directory.Delete(d, true));
             }
         }
@@ -29,6 +49,8 @@ namespace OneCopy.MsTests
             SaveText("FileB", RootDir + "\\FileB.txt");
             SaveText("FileC", FirstDir + "\\FileC.txt");
             SaveGraphicText("FileD", NestedDir + "\\FileD.jpg");
+            SaveRandomBlobOfLength(1, NestedDir + "\\FileE.bin");
+            SaveRandomBlobOfLength(1, RootDir + "\\FileF.bin");
         }
 
         public static void SaveText(string text, string fullName)
@@ -36,6 +58,14 @@ namespace OneCopy.MsTests
             new FileInfo(fullName).Directory.Create();
             Console.WriteLine("Creating file at " + fullName);
             File.WriteAllText(fullName, text);
+        }
+
+        public static void SaveRandomBlobOfLength(int sizeInMb, string fileName)
+        {
+            byte[] data = new byte[sizeInMb * 1024 * 1024];
+            Random rng = new Random();
+            rng.NextBytes(data);
+            File.WriteAllBytes(fileName, data);
         }
 
         public static void SaveGraphicText(string text, string fullName)

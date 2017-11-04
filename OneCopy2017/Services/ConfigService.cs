@@ -7,11 +7,12 @@ namespace OneCopy2017.Services
 {
     public class ConfigService
     {
-        private readonly ErrorHandlingService _errorHandlingService;
         private readonly AppManagementService _appManagementService;
+        private readonly ErrorHandlingService _errorHandlingService;
         private readonly ValidationService _validationService;
 
-        public ConfigService(ValidationService validationService, ErrorHandlingService errorHandlingService, AppManagementService appManagementService)
+        public ConfigService(ValidationService validationService, ErrorHandlingService errorHandlingService,
+            AppManagementService appManagementService)
         {
             _validationService = validationService;
             _errorHandlingService = errorHandlingService;
@@ -22,10 +23,9 @@ namespace OneCopy2017.Services
             CommandArgumentsStrategy = CommandArgumentsStrategyOption.Oldest;
         }
 
-
-
         public string[] Directories { get; set; }
-
+        public string[] ExcludeDirectoryNames { get; set; }
+        public string[] IncludeFileExtensions { get; set; }
         public bool Preview { get; set; }
         public string DupesDirectory { get; set; }
         public string SynologyHiddenDirectoryName { get; }
@@ -45,9 +45,8 @@ namespace OneCopy2017.Services
             else
             {
                 _errorHandlingService.ThrowCatastrophicError(
-                         $"Cannot start the program. Strategy option was defined in start up arguments but is invalid. Valid options are 'oldest' or 'newest'");
+                    $"Cannot start the program. Strategy option was defined in start up arguments but is invalid. Valid options are 'oldest' or 'newest'");
             }
-
         }
 
         public void Load()
@@ -56,6 +55,8 @@ namespace OneCopy2017.Services
             Preview = CommandArguments.Preview;
             Directories = CommandArguments.Directories;
             DupesDirectory = CommandArguments.DupesDirectory;
+            ExcludeDirectoryNames = CommandArguments.ExcludeDirectoryNames;
+            IncludeFileExtensions = CommandArguments.IncludeFileExtensions;
 
             Validate();
 

@@ -20,18 +20,12 @@ namespace OneCopy2017.DataObjects
 
         public DateTime NewestTime
         {
-            get
-            {
-                return TimeInformation.OrderBy(d => d.Ticks).Last();
-            }
+            get { return TimeInformation.OrderBy(d => d.Ticks).Last(); }
         }
 
         public DateTime OldestTime
         {
-            get
-            {
-                return TimeInformation.OrderBy(d => d.Ticks).First();
-            }
+            get { return TimeInformation.OrderBy(d => d.Ticks).First(); }
         }
 
         private FileInfo FileInformation { get; }

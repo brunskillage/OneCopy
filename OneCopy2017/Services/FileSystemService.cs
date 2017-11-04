@@ -17,15 +17,15 @@ namespace OneCopy2017.Services
         public class FileSystemService
         {
             private readonly ConfigService _configService;
-            private readonly EventService _eventService;
+            private readonly EventService _es;
 
             public readonly Func<string, int> OrderedBySegmentCountFunction =
                 d => d.ToCharArray().Count(s => s == Path.DirectorySeparatorChar);
 
-            public FileSystemService(ConfigService configService, EventService eventService)
+            public FileSystemService(ConfigService configService, EventService es)
             {
                 _configService = configService;
-                _eventService = eventService;
+                _es = es;
             }
 
             public void EnsureFileDirectory(string filePath)
@@ -37,11 +37,11 @@ namespace OneCopy2017.Services
 
             public void MoveFile(string srcFullPath, string destFullPath)
             {
-                _eventService.Talk($"Moving file {srcFullPath} to {destFullPath}");
+                _es.Talk($"Moving file {srcFullPath} to {destFullPath}");
                 if (srcFullPath == null || !File.Exists(srcFullPath))
                     return;
                 EnsureFileDirectory(destFullPath);
-                if(!_configService.Preview)
+                if (!_configService.Preview)
                     File.Move(srcFullPath, destFullPath);
             }
 
@@ -51,7 +51,7 @@ namespace OneCopy2017.Services
                 if (filePath == null || !File.Exists(filePath))
                     return string.Empty;
 
-                _eventService.Talk($"Hashing {filePath}");
+                _es.Talk($"Hashing {filePath}");
                 using (var stream = new BufferedStream(File.OpenRead(filePath), 4096))
                 {
                     var sha = new SHA256Managed();
@@ -86,22 +86,26 @@ namespace OneCopy2017.Services
 
             public void Save(string file, string text)
             {
-                if(!_configService.Preview)
+                if (!_configService.Preview)
                     File.WriteAllText(file, text);
             }
 
             public IEnumerable<string> GetAllDirectories(string root, string excludeSplitByPipe)
             {
-                _eventService.Talk($"Getting all directories in {root}");
-                _eventService.Talk($"Exclusions are {excludeSplitByPipe}");
+                _es.Talk($"Getting all directories in {root}");
+                _es.Talk($"Exclusions are {excludeSplitByPipe}");
 
                 if (excludeSplitByPipe == null)
-                    excludeSplitByPipe = String.Empty;
+                    excludeSplitByPipe = string.Empty;
 
-                var dirs = Directory.EnumerateDirectories(root, "*.*", SearchOption.AllDirectories);
-                
+                // add the root dir
+                var dirs = Enumerable.Empty<string>();
+                dirs = dirs.Concat(new[] {root});
+
+                dirs = dirs.Concat(Directory.EnumerateDirectories(root, "*.*", SearchOption.AllDirectories));
+
                 var excludeArray = excludeSplitByPipe.ToUpperInvariant().Split('|');
-                
+
                 if (!string.IsNullOrWhiteSpace(excludeSplitByPipe))
                     dirs = dirs.Where(s => !excludeArray.Any(a => s.ToUpperInvariant().Contains(a)));
 
@@ -110,31 +114,45 @@ namespace OneCopy2017.Services
 
             public IEnumerable<string> GetAllFileSystemEntries(string root, string excludeSplitByPipe)
             {
-                if (excludeSplitByPipe == null)
-                    excludeSplitByPipe = String.Empty;
+                _es.Talk($"Getting all file system entries in {root}");
+                _es.Talk($"Exclusions are {excludeSplitByPipe}");
 
-                _eventService.Talk($"Getting all file system entries in {root}");
-                _eventService.Talk($"Exclusions are {excludeSplitByPipe}");
-
-                var excludeArray = excludeSplitByPipe.ToUpperInvariant().Split('|');
                 var dirs = Directory.EnumerateFileSystemEntries(root, "*.*", SearchOption.AllDirectories);
+
                 if (!string.IsNullOrWhiteSpace(excludeSplitByPipe))
+                {
+                    var excludeArray = excludeSplitByPipe.ToUpperInvariant().Split('|');
                     dirs = dirs.Where(s => !excludeArray.Any(a => s.ToUpperInvariant().Contains(a)));
+                }
+
                 return dirs;
             }
 
-            public IEnumerable<FileBlob> GetAllFilesInDirectory(string dir)
-                => Directory.EnumerateFiles(dir).Select(path => new FileBlob(new FileInfo(path)));
-
-            public IEnumerable<FileBlob> GetAllFileBlobs(string root, string excludeSplitByPipe)
+            public IEnumerable<FileBlob> GetAllFilesInDirectory(string dir, string includeFileExtensionsListSplitByPipe)
             {
-                _eventService.Talk($"Getting files for {root}");
-                var dirs = GetAllDirectories(root, excludeSplitByPipe);
+                var files = Directory.EnumerateFiles(dir);
+
+                if (!string.IsNullOrWhiteSpace(includeFileExtensionsListSplitByPipe))
+                {
+                    var includeArray = includeFileExtensionsListSplitByPipe.ToUpperInvariant().Split('|');
+                    files =
+                        files.Where(
+                            s => includeArray.Any(a => a == Path.GetExtension(s).Substring(1).ToUpperInvariant()));
+                }
+
+                return files.Select(path => new FileBlob(new FileInfo(path)));
+            }
+
+            public IEnumerable<FileBlob> GetAllFileBlobs(string root, string includeFileExtensionsList,
+                string excludeDirectoriesList)
+            {
+                _es.Talk($"Getting files for {root}");
+                var dirs = GetAllDirectories(root, excludeDirectoriesList);
                 var blobs = new List<FileBlob>();
 
                 foreach (var dir in dirs)
                 {
-                    blobs.AddRange(GetAllFilesInDirectory(dir));
+                    blobs.AddRange(GetAllFilesInDirectory(dir, includeFileExtensionsList));
                 }
 
                 return blobs;
@@ -147,13 +165,13 @@ namespace OneCopy2017.Services
 
             public List<FileBlob> GetDuplicates(List<FileBlob> blobs)
             {
-                _eventService.Talk($"Getting duplicates");
+                _es.Talk($"Getting duplicates");
                 var duplicateLengthBlobs = new List<FileBlob>();
 
-                _eventService.Talk($"Grouping by length");
+                _es.Talk($"Grouping by length");
                 var lengthGrouping = blobs.GroupBy(b => b.Length).Where(g => g.Count() > 1);
 
-                _eventService.Talk(
+                _es.Talk(
                     $"Found {lengthGrouping.Count()} groups of matching lengths containing {lengthGrouping.SelectMany(g => g.OfType<FileBlob>()).Count()} files");
 
                 if (lengthGrouping.Count() == 0)
@@ -161,7 +179,7 @@ namespace OneCopy2017.Services
 
                 foreach (var group in lengthGrouping)
                 {
-                    _eventService.Talk(
+                    _es.Talk(
                         $"Generating hashes within the {group.Key} length group ({group.Count()} candidates)");
                     foreach (var fileBlob in group)
                     {
@@ -171,11 +189,11 @@ namespace OneCopy2017.Services
                     duplicateLengthBlobs.AddRange(group);
                 }
 
-                _eventService.Talk($"Grouping by hash");
+                _es.Talk($"Grouping by hash");
 
                 var hashGrouping = duplicateLengthBlobs.GroupBy(b => b.Hash).Where(g => g.Count() > 1);
 
-                _eventService.Talk(
+                _es.Talk(
                     $"Found {hashGrouping.Count()} groups of matching hashes containing {hashGrouping.SelectMany(g => g.OfType<FileBlob>()).Count()} files");
 
                 if (hashGrouping.Count() == 0)
@@ -185,23 +203,22 @@ namespace OneCopy2017.Services
 
                 foreach (var hashGroup in hashGrouping)
                 {
-                    _eventService.Talk("======================================");
-                    _eventService.Talk(
+                    _es.Talk("======================================");
+                    _es.Talk(
                         $"Sorting group {hashGroup.Key.Substring(0, 5)} and collecting all but the oldest of any file times, with shtest path prefered");
 
-                    var orderedHashGroup = hashGroup.OrderBy(b => b.OldestTime).ThenBy(b=>b.FullName.Length);
+                    var orderedHashGroup = hashGroup.OrderBy(b => b.OldestTime).ThenBy(b => b.FullName.Length);
                     foreach (var fileBlob in orderedHashGroup)
                     {
-                        _eventService.Talk(fileBlob.ToString());
+                        _es.Talk(fileBlob.ToString());
                     }
 
                     duplicateMd5Blobs.AddRange(orderedHashGroup.Skip(1));
                 }
 
-                _eventService.Talk($"{duplicateMd5Blobs.Count} duplicates to be removed found");
+                _es.Talk($"{duplicateMd5Blobs.Count} duplicates to be removed found");
                 return duplicateMd5Blobs;
             }
-
 
             private void TryDeleteFile(string fullPath)
             {
@@ -209,29 +226,29 @@ namespace OneCopy2017.Services
                 {
                     return;
                 }
-                _eventService.Talk($"Deleting file {fullPath}");
+                _es.Talk($"Deleting file {fullPath}");
                 try
                 {
                     if (!_configService.Preview)
-                       File.Delete(fullPath);
+                        File.Delete(fullPath);
                 }
                 catch (Exception ex)
                 {
-                    _eventService.Talk($"Cannot delete file {fullPath}");
-                    _eventService.Talk($"{ex}");
+                    _es.Talk($"Cannot delete file {fullPath}");
+                    _es.Talk($"{ex}");
                 }
             }
 
             public void RemoveEmptyDirectories(string dir, string excludeDirectories)
             {
-                _eventService.Talk($"Finding empty directories in {dir}");
+                _es.Talk($"Finding empty directories in {dir}");
                 var dirs = GetAllDirectories(dir, excludeDirectories);
 
                 var singleFileDirectoryGroups = dirs.Where(s => Directory.EnumerateFiles(s).Count() == 1);
 
                 foreach (var dirname in singleFileDirectoryGroups)
                 {
-                      TryDeleteFile(Path.Combine(dirname, "Thumbs.db"));
+                    TryDeleteFile(Path.Combine(dirname, "Thumbs.db"));
                 }
 
                 var zeroDirOrFileEntryGroups =
@@ -252,7 +269,7 @@ namespace OneCopy2017.Services
                     return;
                 }
 
-                _eventService.Talk($"Deleting directory {fullPath}");
+                _es.Talk($"Deleting directory {fullPath}");
                 try
                 {
                     if (!_configService.Preview)
@@ -260,8 +277,8 @@ namespace OneCopy2017.Services
                 }
                 catch (Exception ex)
                 {
-                    _eventService.Talk($"Cannot delete directory {fullPath}");
-                    _eventService.Talk($"{ex}");
+                    _es.Talk($"Cannot delete directory {fullPath}");
+                    _es.Talk($"{ex}");
                 }
             }
         }

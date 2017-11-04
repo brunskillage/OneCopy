@@ -35,8 +35,18 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FluentAssertions, Version=4.19.4.0, Culture=neutral, PublicKeyToken=33f2691a05b67b6a, processorArchitecture=MSIL">
+      <HintPath>..\packages\FluentAssertions.4.19.4\lib\net45\FluentAssertions.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="FluentAssertions.Core, Version=4.19.4.0, Culture=neutral, PublicKeyToken=33f2691a05b67b6a, processorArchitecture=MSIL">
+      <HintPath>..\packages\FluentAssertions.4.19.4\lib\net45\FluentAssertions.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <Choose>
     <When Condition="('$(VisualStudioVersion)' == '10.0' or '$(VisualStudioVersion)' == '') and '$(TargetFrameworkVersion)' == 'v3.5'">
@@ -52,8 +62,17 @@
   </Choose>
   <ItemGroup>
     <Compile Include="TestSetup.cs" />
-    <Compile Include="UnitTest1.cs" />
+    <Compile Include="DuplicateTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\OneCopy2017\OneCopy2017.csproj">
+      <Project>{907a3d13-19cc-4b1b-9fbe-d205385f3f56}</Project>
+      <Name>OneCopy2017</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

@@ -31,7 +31,7 @@ namespace OneCopy2017
             var blobs = _configService.Directories.SelectMany(
                 d =>
                     _fileSystem.GetAllFileBlobs(d,
-                        $"{_configService.DupesDirectoryName}|{_configService.SynologyHiddenDirectoryName}")).ToList();
+                        $"{_configService.DupesDirectoryName}|{_configService.SynologyHiddenDirectoryName}", null)).ToList();
 
 
             _eventService.Talk($"Found {blobs.Count()} files");

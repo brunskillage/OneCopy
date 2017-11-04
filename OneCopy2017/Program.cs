@@ -6,9 +6,9 @@ using OneCopy2017.TinyIoc;
 
 namespace OneCopy2017
 {
-    internal class Program
+    public class Program
     {
-        private static void Main(string[] args)
+        public static void Main(string[] args)
         {
             var container = RegisterServices();
             
@@ -32,14 +32,6 @@ namespace OneCopy2017
                 container.Register(type).AsSingleton();
 
             container.Register<App>().AsSingleton();
-
-            //container.Register<ConfigService>().AsSingleton();
-            //container.Register<EventService>().AsSingleton();
-            //container.Register<FileSystemService>().AsSingleton();
-            //container.Register<LogService>().AsSingleton();
-            //container.Register<ValidationService>().AsSingleton();
-            //container.Register<ErrorHandlingService>().AsSingleton();
-            //container.Register<AppManagementService>().AsSingleton();
 
             return container;
         }
