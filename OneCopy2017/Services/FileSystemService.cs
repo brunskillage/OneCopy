@@ -45,6 +45,16 @@ namespace OneCopy2017.Services
                     File.Move(srcFullPath, destFullPath);
             }
 
+            public void CopyFile(string srcFullPath, string destFullPath, bool overWrite)
+            {
+                _es.Talk($"Copying file {srcFullPath} to {destFullPath}");
+                if (srcFullPath == null || !File.Exists(srcFullPath))
+                    return;
+                EnsureFileDirectory(destFullPath);
+                if (!_configService.Preview)
+                    File.Copy(srcFullPath, destFullPath, overWrite);
+            }
+
             public string GetHash(string filePath)
             {
                 // strange paralle behaviour - unreliable numbers based n hash which went on single thread.

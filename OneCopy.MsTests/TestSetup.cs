@@ -8,12 +8,12 @@ using OneCopy2017.TinyIoc;
 
 namespace OneCopy.MsTests
 {
-
     public class TestSetup
     {
         public static readonly string RootDir = "c:\\temp\\DupeTestRoot";
-        private static readonly string FirstDir = RootDir + "\\FirstDir";
-        private static readonly string NestedDir = RootDir + "\\ThirdDir\\Nested";
+        public static readonly string FirstDir = RootDir + "\\FirstDir";
+        public static readonly string NestedDir = RootDir + "\\ThirdDir\\Nested";
+        public static readonly string Dupe1SourceFullPath = RootDir + "\\FileF.bin";
 
         public static TinyIoCContainer RegisterServices()
         {
@@ -42,15 +42,17 @@ namespace OneCopy.MsTests
             }
         }
 
-        public static void CreateSimulatedRealLifeDirectory()
+        public static void CreateSimulatedRealLifeDirectoryIfNotExists()
         {
-            ClearTestFiles();
-            SaveGraphicText("FileA", RootDir + "\\FileA.jpg");
-            SaveText("FileB", RootDir + "\\FileB.txt");
-            SaveText("FileC", FirstDir + "\\FileC.txt");
-            SaveGraphicText("FileD", NestedDir + "\\FileD.jpg");
-            SaveRandomBlobOfLength(1, NestedDir + "\\FileE.bin");
-            SaveRandomBlobOfLength(1, RootDir + "\\FileF.bin");
+            if (!Directory.Exists(RootDir))
+            {
+                SaveGraphicText("FileA", RootDir + "\\FileA.jpg");  
+                SaveText("FileB", RootDir + "\\FileB.txt");
+                SaveText("FileC", FirstDir + "\\FileC.txt");
+                SaveGraphicText("FileD", NestedDir + "\\FileD.jpg");
+                SaveRandomBlobOfLength(1, NestedDir + "\\FileE.bin");
+                SaveRandomBlobOfLength(1, RootDir + "\\FileF.bin");
+            }
         }
 
         public static void SaveText(string text, string fullName)

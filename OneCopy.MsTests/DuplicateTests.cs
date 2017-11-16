@@ -23,8 +23,7 @@ namespace OneCopy.MsTests
             CommandArguments.Directories = new[] {TestSetup.RootDir};
 
             // uncoment the below to create the test file structure - a one off
-            // TestSetup.ClearTestFiles();
-            // TestSetup.CreateSimulatedRealLifeDirectory();
+            TestSetup.CreateSimulatedRealLifeDirectoryIfNotExists();
         }
 
         [TestMethod]
@@ -67,7 +66,7 @@ namespace OneCopy.MsTests
             var files = fsService.GetAllFileBlobs(TestSetup.RootDir, "jpg|bin", null).ToList();
 
             // assert
-            files.Count().Should().Be(4);
+            files.Count.Should().Be(4);
 
             // should find the filtered files
             files.Count(f => Path.GetExtension(f.FullName).Substring(1).ToUpperInvariant() == "JPG").Should().Be(2);
@@ -75,6 +74,22 @@ namespace OneCopy.MsTests
 
             // should not find txt files as excluded
             files.Count(f => Path.GetExtension(f.FullName).Substring(1).ToUpperInvariant() == "TXT").Should().Be(0);
+        }
+
+        [TestMethod]
+        public void ShouldDetectDuplicateWithSameFileNameDifferentDirectory()
+        {
+            // arrange
+            var fsService = _container.Resolve<FileSystemService>();
+            var dest = TestSetup.Dupe1SourceFullPath.Replace(TestSetup.RootDir, TestSetup.FirstDir);
+            fsService.CopyFile(TestSetup.Dupe1SourceFullPath, dest, true);
+
+            // act
+            var blobs = fsService.GetAllFileBlobs(TestSetup.RootDir, null, null).ToList();
+            var result = fsService.GetDuplicates(blobs);
+
+            // assert
+            result.Count.Should().Be(1);
         }
     }
 }
