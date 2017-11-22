@@ -20,7 +20,7 @@ namespace OneCopy2017.Services
 
             SynologyHiddenDirectoryName = @"@eaDir";
             DupesDirectoryName = @"_dupes";
-            CommandArgumentsStrategy = CommandArgumentsStrategyOption.Oldest;
+            Keep = KeepOption.Oldest;
         }
 
         public string[] Directories { get; set; }
@@ -30,7 +30,7 @@ namespace OneCopy2017.Services
         public string DupesDirectory { get; set; }
         public string SynologyHiddenDirectoryName { get; }
         public string DupesDirectoryName { get; }
-        public CommandArgumentsStrategyOption CommandArgumentsStrategy { get; set; }
+        public KeepOption Keep { get; set; }
 
         public void Validate()
         {
@@ -39,9 +39,9 @@ namespace OneCopy2017.Services
                     _errorHandlingService.ThrowCatastrophicError(
                         $"Invalid directory '{directory}' check start arguments or configuration. {_appManagementService.Help}");
 
-            CommandArgumentsStrategyOption strategyOption;
+            KeepOption strategyOption;
             if (Enum.TryParse(CommandArguments.Strategy, true, out strategyOption))
-                CommandArgumentsStrategy = strategyOption;
+                Keep = strategyOption;
             else
             {
                 _errorHandlingService.ThrowCatastrophicError(

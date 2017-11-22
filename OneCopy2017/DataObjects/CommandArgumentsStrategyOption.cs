@@ -1,6 +1,6 @@
 namespace OneCopy2017.DataObjects
 {
-    public enum CommandArgumentsStrategyOption
+    public enum KeepOption
     {
         Oldest,
         Newest

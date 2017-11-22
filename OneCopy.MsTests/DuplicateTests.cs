@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using FluentAssertions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -90,6 +91,43 @@ namespace OneCopy.MsTests
 
             // assert
             result.Count.Should().Be(1);
+        }
+
+        [TestMethod]
+        public void ShouldUseCorrectStrategy()
+        {
+            var keepOptions = new[] {KeepOption.Oldest, KeepOption.Newest};
+
+            foreach (var keepOption in keepOptions)
+            {
+
+                // arrange
+                var fsService = _container.Resolve<FileSystemService>();
+                var dest = TestSetup.Dupe1SourceFullPath.Replace(TestSetup.RootDir, TestSetup.FirstDir);
+                fsService.CopyFile(TestSetup.Dupe1SourceFullPath, dest, true);
+
+                // act
+                // set the date on the src and dest
+                File.SetCreationTime(TestSetup.Dupe1SourceFullPath, new DateTime(1970, 1, 1));
+                File.SetLastWriteTime(TestSetup.Dupe1SourceFullPath, new DateTime(1970, 1, 1));
+                File.SetLastAccessTime(TestSetup.Dupe1SourceFullPath, new DateTime(1970, 1, 1));
+
+                File.SetCreationTime(dest, new DateTime(2050, 1, 1));
+                File.SetLastWriteTime(dest, new DateTime(2050, 1, 1));
+                File.SetLastAccessTime(dest, new DateTime(2050, 1, 1));
+
+                var blobs = fsService.GetAllFileBlobs(TestSetup.RootDir, null, null).ToList();
+                var result = fsService.GetDuplicates(blobs, keepOption);
+
+                // assert
+                // duplicate should be the newest
+                if (keepOption == KeepOption.Oldest)
+                    result.First().FullName.Should().Be(dest);
+
+                if (keepOption == KeepOption.Newest) // should be the oldest that goes
+                    result.First().FullName.Should().Be(TestSetup.Dupe1SourceFullPath);
+
+            }
         }
     }
 }

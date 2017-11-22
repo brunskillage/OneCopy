@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Web.UI.WebControls.Expressions;
 using OneCopy2017.DataObjects;
 
 // ReSharper disable UseMethodAny.2
@@ -173,7 +175,7 @@ namespace OneCopy2017.Services
                 return sourceDirs.OrderByDescending(OrderedBySegmentCountFunction);
             }
 
-            public List<FileBlob> GetDuplicates(List<FileBlob> blobs)
+            public List<FileBlob> GetDuplicates(List<FileBlob> blobs, KeepOption keepOption = KeepOption.Oldest)
             {
                 _es.Talk($"Getting duplicates");
                 var duplicateLengthBlobs = new List<FileBlob>();
@@ -191,10 +193,9 @@ namespace OneCopy2017.Services
                 {
                     _es.Talk(
                         $"Generating hashes within the {group.Key} length group ({group.Count()} candidates)");
+
                     foreach (var fileBlob in group)
-                    {
                         fileBlob.Hash = GetHash(fileBlob.FullName);
-                    }
 
                     duplicateLengthBlobs.AddRange(group);
                 }
@@ -211,24 +212,39 @@ namespace OneCopy2017.Services
 
                 var duplicateMd5Blobs = new List<FileBlob>();
 
+                // look at the set of duplicates
                 foreach (var hashGroup in hashGrouping)
                 {
                     _es.Talk("======================================");
                     _es.Talk(
-                        $"Sorting group {hashGroup.Key.Substring(0, 5)} and collecting all but the oldest of any file times, with shtest path prefered");
+                        $"Sorting group {hashGroup.Key.Substring(0, 5)} and collecting all but the oldest of any file times, with shortest path prefered");
 
-                    var orderedHashGroup = hashGroup.OrderBy(b => b.OldestTime).ThenBy(b => b.FullName.Length);
+                    // execute functions on the group, this enables keep strategey
+                    var orderedHashGroup = ApplySort(hashGroup, keepOption); // .ThenBy(b => b.FullName.Split(Path.DirectorySeparatorChar).Length);
+
+                    // print the group contents
                     foreach (var fileBlob in orderedHashGroup)
-                    {
                         _es.Talk(fileBlob.ToString());
-                    }
 
+                    // add all but the first to the duplicates group leaving the prefered original
                     duplicateMd5Blobs.AddRange(orderedHashGroup.Skip(1));
                 }
 
                 _es.Talk($"{duplicateMd5Blobs.Count} duplicates to be removed found");
                 return duplicateMd5Blobs;
             }
+
+            private IEnumerable<FileBlob> ApplySort(IGrouping<string, FileBlob> hashGroup, KeepOption keepOption)
+            {
+                if (keepOption == KeepOption.Oldest)
+                    return hashGroup.OrderBy(b =>b.OldestTime);
+
+                if (keepOption == KeepOption.Newest)
+                    return hashGroup.OrderByDescending(b => b.OldestTime);
+
+                throw new ArgumentException("Invalid keep option");
+            }
+
 
             private void TryDeleteFile(string fullPath)
             {

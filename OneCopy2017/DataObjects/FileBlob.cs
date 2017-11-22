@@ -34,19 +34,17 @@ namespace OneCopy2017.DataObjects
         {
             FileInformation.CreationTimeUtc,
             FileInformation.LastAccessTimeUtc,
-            FileInformation.LastWriteTimeUtc,
-            FileInformation.Directory.CreationTimeUtc,
-            FileInformation.Directory.LastAccessTimeUtc,
-            FileInformation.Directory.LastWriteTimeUtc
+            FileInformation.LastWriteTimeUtc
         };
 
         public override string ToString()
         {
             return
                 $"Name: {FileInformation.FullName} {Environment.NewLine}" +
-                $"   Oldest: {OldestTime} Created:{FileInformation.CreationTimeUtc} {Environment.NewLine}" +
-                $"   Modified:{FileInformation.LastWriteTimeUtc} Accessed: {FileInformation.LastAccessTimeUtc} {Environment.NewLine}" +
-                $"   Hash: {Hash}";
+                $" Oldest: {OldestTime} Created:{FileInformation.CreationTimeUtc} {Environment.NewLine}" +
+                $" Newest: {NewestTime} Created:{FileInformation.CreationTimeUtc} {Environment.NewLine}" +
+                $" Modified:{FileInformation.LastWriteTimeUtc} Accessed: {FileInformation.LastAccessTimeUtc} {Environment.NewLine}" +
+                $" Hash: {Hash}";
         }
     }
 }
