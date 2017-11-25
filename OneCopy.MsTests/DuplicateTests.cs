@@ -14,8 +14,8 @@ namespace OneCopy.MsTests
     {
         private static TinyIoCContainer _container = null;
 
-        [ClassInitialize]
-        public static void ClassInitialize(TestContext context)
+        [TestInitialize]
+        public void TestInitialize()
         {
             _container = TestSetup.RegisterServices();
 
@@ -25,6 +25,7 @@ namespace OneCopy.MsTests
 
             // uncoment the below to create the test file structure - a one off
             TestSetup.CreateSimulatedRealLifeDirectoryIfNotExists();
+
         }
 
         [TestMethod]
@@ -80,6 +81,7 @@ namespace OneCopy.MsTests
         [TestMethod]
         public void ShouldDetectDuplicateWithSameFileNameDifferentDirectory()
         {
+
             // arrange
             var fsService = _container.Resolve<FileSystemService>();
             var dest = TestSetup.Dupe1SourceFullPath.Replace(TestSetup.RootDir, TestSetup.FirstDir);

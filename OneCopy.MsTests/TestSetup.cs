@@ -37,22 +37,29 @@ namespace OneCopy.MsTests
         {
             if (Directory.Exists(RootDir))
             {
-                Directory.EnumerateFiles(RootDir).ToList().ForEach(File.Delete);
-                Directory.EnumerateDirectories(RootDir).ToList().ForEach(d => Directory.Delete(d, true));
+                Directory.EnumerateFiles(RootDir, "*.*",SearchOption.AllDirectories).ToList().ForEach(File.Delete);
+                Directory.EnumerateDirectories(RootDir)
+                    .OrderByDescending(d=>d.Split(Path.DirectorySeparatorChar)
+                    .Count())
+                    .ToList()
+                    .ForEach(d => Directory.Delete(d, true));
             }
         }
 
         public static void CreateSimulatedRealLifeDirectoryIfNotExists()
         {
-            if (!Directory.Exists(RootDir))
-            {
-                SaveGraphicText("FileA", RootDir + "\\FileA.jpg");  
-                SaveText("FileB", RootDir + "\\FileB.txt");
-                SaveText("FileC", FirstDir + "\\FileC.txt");
-                SaveGraphicText("FileD", NestedDir + "\\FileD.jpg");
-                SaveRandomBlobOfLength(1, NestedDir + "\\FileE.bin");
-                SaveRandomBlobOfLength(1, RootDir + "\\FileF.bin");
-            }
+            if (Directory.Exists(RootDir) &&
+                Directory.GetFiles(TestSetup.RootDir, "*.*", SearchOption.AllDirectories).Count() == 6)
+                return;
+            
+            ClearTestFiles();
+            SaveGraphicText("FileA", RootDir + "\\FileA.jpg");  
+            SaveText("FileB", RootDir + "\\FileB.txt");
+            SaveText("FileC", FirstDir + "\\FileC.txt");
+            SaveGraphicText("FileD", NestedDir + "\\FileD.jpg");
+            SaveRandomBlobOfLength(1, NestedDir + "\\FileE.bin");
+            SaveRandomBlobOfLength(1, RootDir + "\\FileF.bin");
+            
         }
 
         public static void SaveText(string text, string fullName)
