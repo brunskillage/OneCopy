@@ -31,32 +31,38 @@ namespace OneCopy2017.Services
         public string SynologyHiddenDirectoryName { get; }
         public string DupesDirectoryName { get; }
         public KeepOption Keep { get; set; }
+        public bool Clean { get; set; }
 
         public void Validate()
         {
+            if (Directories == null)
+                _errorHandlingService.ThrowCatastrophicError(
+                    $"Invalid directory, check start arguments or configuration. {_appManagementService.Help}");
+
+
             foreach (var directory in Directories)
                 if (!_validationService.IsValidDirectory(directory))
                     _errorHandlingService.ThrowCatastrophicError(
                         $"Invalid directory '{directory}' check start arguments or configuration. {_appManagementService.Help}");
 
             KeepOption strategyOption;
-            if (Enum.TryParse(CommandArguments.Strategy, true, out strategyOption))
+            if (Enum.TryParse(CommandArguments.Strategy ?? KeepOption.Oldest.ToString(), true, out strategyOption))
                 Keep = strategyOption;
             else
-            {
                 _errorHandlingService.ThrowCatastrophicError(
-                    $"Cannot start the program. Strategy option was defined in start up arguments but is invalid. Valid options are 'oldest' or 'newest'");
-            }
+                    "Cannot start the program. Strategy option was defined in start up arguments but is invalid. Valid options are 'oldest' or 'newest'");
         }
 
         public void Load()
         {
             CommandArguments.Populate();
+
             Preview = CommandArguments.Preview;
             Directories = CommandArguments.Directories;
             DupesDirectory = CommandArguments.DupesDirectory;
             ExcludeDirectoryNames = CommandArguments.ExcludeDirectoryNames;
             IncludeFileExtensions = CommandArguments.IncludeFileExtensions;
+            Clean = CommandArguments.Clean;
 
             Validate();
 

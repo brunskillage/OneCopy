@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using OneCopy2017.DataObjects;
 using OneCopy2017.Services;
 using OneCopy2017.TinyIoc;
 
@@ -11,7 +10,7 @@ namespace OneCopy2017
         public static void Main(string[] args)
         {
             var container = RegisterServices();
-            
+
             container.Resolve<ConfigService>().Load();
             container.Resolve<App>().Run();
 

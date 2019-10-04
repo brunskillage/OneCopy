@@ -1,11 +1,10 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Web.UI.WebControls.Expressions;
+using System.Threading.Tasks;
 using OneCopy2017.DataObjects;
 
 // ReSharper disable UseMethodAny.2
@@ -162,10 +161,7 @@ namespace OneCopy2017.Services
                 var dirs = GetAllDirectories(root, excludeDirectoriesList);
                 var blobs = new List<FileBlob>();
 
-                foreach (var dir in dirs)
-                {
-                    blobs.AddRange(GetAllFilesInDirectory(dir, includeFileExtensionsList));
-                }
+                foreach (var dir in dirs) blobs.AddRange(GetAllFilesInDirectory(dir, includeFileExtensionsList));
 
                 return blobs;
             }
@@ -177,10 +173,10 @@ namespace OneCopy2017.Services
 
             public List<FileBlob> GetDuplicates(List<FileBlob> blobs, KeepOption keepOption = KeepOption.Oldest)
             {
-                _es.Talk($"Getting duplicates");
+                _es.Talk("Getting duplicates");
                 var duplicateLengthBlobs = new List<FileBlob>();
 
-                _es.Talk($"Grouping by length");
+                _es.Talk("Grouping by length");
                 var lengthGrouping = blobs.GroupBy(b => b.Length).Where(g => g.Count() > 1);
 
                 _es.Talk(
@@ -194,13 +190,15 @@ namespace OneCopy2017.Services
                     _es.Talk(
                         $"Generating hashes within the {group.Key} length group ({group.Count()} candidates)");
 
-                    foreach (var fileBlob in group)
-                        fileBlob.Hash = GetHash(fileBlob.FullName);
+                    //foreach (var fileBlob in group)
+                    //    fileBlob.Hash = GetHash(fileBlob.FullName);
+
+                    Parallel.ForEach(group, fileBlob => { fileBlob.Hash = GetHash(fileBlob.FullName); });
 
                     duplicateLengthBlobs.AddRange(group);
                 }
 
-                _es.Talk($"Grouping by hash");
+                _es.Talk("Grouping by hash");
 
                 var hashGrouping = duplicateLengthBlobs.GroupBy(b => b.Hash).Where(g => g.Count() > 1);
 
@@ -220,7 +218,9 @@ namespace OneCopy2017.Services
                         $"Sorting group {hashGroup.Key.Substring(0, 5)} and collecting all but the oldest of any file times, with shortest path prefered");
 
                     // execute functions on the group, this enables keep strategey
-                    var orderedHashGroup = ApplySort(hashGroup, keepOption); // .ThenBy(b => b.FullName.Split(Path.DirectorySeparatorChar).Length);
+                    var orderedHashGroup =
+                        ApplySort(hashGroup,
+                            keepOption); // .ThenBy(b => b.FullName.Split(Path.DirectorySeparatorChar).Length);
 
                     // print the group contents
                     foreach (var fileBlob in orderedHashGroup)
@@ -237,7 +237,7 @@ namespace OneCopy2017.Services
             private IEnumerable<FileBlob> ApplySort(IGrouping<string, FileBlob> hashGroup, KeepOption keepOption)
             {
                 if (keepOption == KeepOption.Oldest)
-                    return hashGroup.OrderBy(b =>b.OldestTime);
+                    return hashGroup.OrderBy(b => b.OldestTime);
 
                 if (keepOption == KeepOption.Newest)
                     return hashGroup.OrderByDescending(b => b.OldestTime);
@@ -248,10 +248,7 @@ namespace OneCopy2017.Services
 
             private void TryDeleteFile(string fullPath)
             {
-                if (string.IsNullOrWhiteSpace(fullPath) || !File.Exists(fullPath))
-                {
-                    return;
-                }
+                if (string.IsNullOrWhiteSpace(fullPath) || !File.Exists(fullPath)) return;
                 _es.Talk($"Deleting file {fullPath}");
                 try
                 {
@@ -272,34 +269,26 @@ namespace OneCopy2017.Services
 
                 var singleFileDirectoryGroups = dirs.Where(s => Directory.EnumerateFiles(s).Count() == 1);
 
-                foreach (var dirname in singleFileDirectoryGroups)
-                {
-                    TryDeleteFile(Path.Combine(dirname, "Thumbs.db"));
-                }
+                foreach (var dirname in singleFileDirectoryGroups) TryDeleteFile(Path.Combine(dirname, "Thumbs.db"));
 
                 var zeroDirOrFileEntryGroups =
                     GetAllDirectories(dir, excludeDirectories)
                         .Where(s => !GetAllFileSystemEntries(s, excludeDirectories).Any())
                         .OrderByDescending(OrderedBySegmentCountFunction);
 
-                foreach (var dirname in zeroDirOrFileEntryGroups)
-                {
-                    TryDeleteDirectory(dirname);
-                }
+                foreach (var dirname in zeroDirOrFileEntryGroups) TryDeleteDirectory(dirname);
             }
 
             private void TryDeleteDirectory(string fullPath)
             {
-                if (string.IsNullOrWhiteSpace(fullPath) || (!Directory.Exists(fullPath)))
-                {
-                    return;
-                }
+                if (string.IsNullOrWhiteSpace(fullPath) || !Directory.Exists(fullPath)) return;
 
                 _es.Talk($"Deleting directory {fullPath}");
                 try
                 {
                     if (!_configService.Preview)
                         new DirectoryInfo(fullPath).Delete();
+                    else _es.Talk($"PREVIEW ONLY Deleting directory {fullPath}");
                 }
                 catch (Exception ex)
                 {

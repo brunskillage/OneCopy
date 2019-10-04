@@ -30,8 +30,8 @@ namespace OneCopy2017
 
             var blobs = _configService.Directories.SelectMany(
                 d =>
-                    _fileSystem.GetAllFileBlobs(d,
-                        $"{_configService.DupesDirectoryName}|{_configService.SynologyHiddenDirectoryName}", null)).ToList();
+                    _fileSystem.GetAllFileBlobs(d,null,
+                        $"{_configService.DupesDirectoryName}|{_configService.SynologyHiddenDirectoryName}")).ToList();
 
 
             _eventService.Talk($"Found {blobs.Count()} files");
@@ -52,7 +52,8 @@ namespace OneCopy2017
                     _fileSystem.MoveFile(src, dest);
                 }
 
-                _fileSystem.RemoveEmptyDirectories(_configService.Directories.First(),
+                if(_configService.Clean)
+                    _fileSystem.RemoveEmptyDirectories(_configService.Directories.First(),
                     $"{_configService.DupesDirectoryName}|{_configService.SynologyHiddenDirectoryName}");
             }
 
